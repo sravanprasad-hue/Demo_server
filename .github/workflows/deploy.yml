@@ -2,26 +2,20 @@ name: Simple CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to EC2
-        run: |
-          mkdir -p ~/.ssh
-
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-          # Fix Windows line endings
-          sed -i 's/\r$//' ~/.ssh/id_rsa
-
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
             cd ~/Demo_server
             git pull origin main
 
@@ -37,5 +31,3 @@ jobs:
             sudo cp -r dist/* /var/www/html/
 
             sudo systemctl restart nginx
-
-          EOF
