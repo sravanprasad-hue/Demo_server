@@ -1,29 +1,41 @@
-- name: Deploy to EC2
-  run: |
-    mkdir -p ~/.ssh
+name: Simple CI/CD
 
-    echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-    chmod 600 ~/.ssh/id_rsa
+on:
+  push:
+    branches:
+      - main
 
-    # Fix Windows line endings
-    sed -i 's/\r$//' ~/.ssh/id_rsa
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-    ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+    steps:
+      - name: Deploy to EC2
+        run: |
+          mkdir -p ~/.ssh
 
-      cd ~/Demo_server
-      git pull origin main
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
-      cd Backend
-      npm install
-      pm2 restart backend-app || pm2 start server.js --name backend-app
+          # Fix Windows line endings
+          sed -i 's/\r$//' ~/.ssh/id_rsa
 
-      cd ../Frontend
-      npm install
-      npm run build
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
 
-      sudo rm -rf /var/www/html/*
-      sudo cp -r dist/* /var/www/html/
+            cd ~/Demo_server
+            git pull origin main
 
-      sudo systemctl restart nginx
+            cd Backend
+            npm install
+            pm2 restart backend-app || pm2 start server.js --name backend-app
 
-    EOF
+            cd ../Frontend
+            npm install
+            npm run build
+
+            sudo rm -rf /var/www/html/*
+            sudo cp -r dist/* /var/www/html/
+
+            sudo systemctl restart nginx
+
+          EOF
